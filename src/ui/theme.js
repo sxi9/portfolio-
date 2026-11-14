@@ -7,14 +7,14 @@ const root = document.documentElement;
 export const themeNames = Object.keys(themes);
 
 export function currentTheme() {
-  const name = root.dataset.theme;
+  const name = root.dataset.palette;
   return themes[name] ? name : themeNames[0];
 }
 
 export function applyTheme(name, { persist = true } = {}) {
   const key = themes[name] ? name : themeNames[0];
   const t = themes[key];
-  root.dataset.theme = key;
+  root.dataset.palette = key;
   for (const k of KEYS) root.style.setProperty(`--${k}`, t[k]);
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t.bg);
   document.querySelectorAll('[data-theme-name]').forEach((el) => (el.textContent = key));

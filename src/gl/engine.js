@@ -85,6 +85,7 @@ export class AsciiEngine {
       this.renderer.extensions.has('EXT_color_buffer_half_float');
     this.sceneType = floatOk ? THREE.HalfFloatType : THREE.UnsignedByteType;
     this.gl = gl;
+    this.maxSide = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE) || 4096, 8192);
 
     this.sceneRT = null;
     this.cellsRT = null;
@@ -219,9 +220,19 @@ export class AsciiEngine {
   // --------------------------------------------------------------- layout --
 
   layout(force) {
-    const dpr = Math.min(window.devicePixelRatio || 1, this.maxDpr);
-    const vw = document.documentElement.clientWidth;
-    const lvh = Math.max(this.probe.offsetHeight || 0, window.innerHeight);
+    const vw = Math.max(1, document.documentElement.clientWidth);
+    // A frame that grows to fit its content can report a "viewport" as tall as
+    // the whole page. Keep the canvas to a screenful either way.
+    const lvh = Math.min(Math.max(this.probe.offsetHeight || 0, window.innerHeight), 3200);
+    // Stay inside what the GPU can allocate, and under ~20 megapixels.
+    const tall = lvh + Math.round(Math.min(150, lvh * 0.14)) * 2;
+    const dpr = Math.min(
+      window.devicePixelRatio || 1,
+      this.maxDpr,
+      this.maxSide / vw,
+      this.maxSide / tall,
+      Math.sqrt(20e6 / (vw * tall)),
+    );
     if (!force && vw === this.vw && lvh === this.lvh && dpr === this.dpr) return;
     this.vw = vw;
     this.lvh = lvh;

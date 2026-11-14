@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="phosphor">
+<html lang="en" data-palette="phosphor">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -29,7 +29,7 @@
         try {
           var t = JSON.parse(localStorage.getItem('sxi9-theme') || 'null');
           if (t && t.name) {
-            d.dataset.theme = t.name;
+            d.dataset.palette = t.name;
             ['ink', 'hot', 'cool', 'bg'].forEach(function (k) {
               if (/^#[0-9a-f]{6}$/i.test(t[k])) d.style.setProperty('--' + k, t[k]);
             });

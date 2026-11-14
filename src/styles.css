@@ -44,10 +44,13 @@
   box-sizing: border-box;
 }
 
+:root {
+  color-scheme: dark;
+}
+
 html {
   font-size: 16px;
   background: var(--bg);
-  color-scheme: dark;
   scroll-behavior: smooth;
   scroll-padding-top: calc(var(--bar) + 20px);
   -webkit-text-size-adjust: 100%;
@@ -57,6 +60,7 @@ body {
   position: relative; /* containing block for #ascii-layer: it spans the document */
   margin: 0;
   min-height: 100vh;
+  background: var(--bg);
   overflow-x: hidden; /* for browsers without overflow: clip */
   overflow-x: clip;
   font-family: var(--font);
@@ -414,11 +418,13 @@ main,
   position: fixed;
   inset: 0 0 auto 0;
   z-index: 10;
-  height: var(--bar);
+  /* clear a notch or system bar when the page runs edge to edge */
+  height: calc(var(--bar) + env(safe-area-inset-top, 0px));
   display: flex;
   align-items: center;
   gap: 18px;
-  padding: 0 var(--gutter);
+  padding: env(safe-area-inset-top, 0px) max(var(--gutter), env(safe-area-inset-right, 0px)) 0
+    max(var(--gutter), env(safe-area-inset-left, 0px));
   border-bottom: 1px solid transparent;
   transition:
     background-color 0.3s,
@@ -1482,7 +1488,7 @@ kbd {
 .terminal {
   position: fixed;
   left: 50%;
-  bottom: 14px;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
   z-index: 20;
   width: min(880px, 100% - 24px);
   height: min(54vh, 460px);
@@ -1787,7 +1793,7 @@ kbd {
   }
   .nav {
     position: fixed;
-    top: var(--bar);
+    top: calc(var(--bar) + env(safe-area-inset-top, 0px));
     left: 0;
     right: 0;
     flex-direction: column;
