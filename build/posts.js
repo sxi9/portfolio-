@@ -1,0 +1,122 @@
+// Build-time only: turns posts/*.md into post objects. Never imported by the
+// browser bundle (vite.config.js is the only caller).
+
+import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { Marked } from 'marked';
+
+const esc = (s) =>
+  String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+
+const slugify = (s) =>
+  String(s)
+    .toLowerCase()
+    .replace(/<[^>]+>/g, '')
+    .replace(/&[a-z]+;/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+/** `key: value` lines between two `---` fences; `[a, b]` makes a list. */
+function frontMatter(src) {
+  const m = src.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+  if (!m) return { meta: {}, body: src };
+  const meta = {};
+  for (const line of m[1].split(/\r?\n/)) {
+    const kv = line.match(/^([A-Za-z_][\w-]*):\s*(.*)$/);
+    if (!kv) continue;
+    let v = kv[2].trim();
+    if (/^\[.*\]$/.test(v)) {
+      v = v
+        .slice(1, -1)
+        .split(',')
+        .map((x) => x.trim().replace(/^["']|["']$/g, ''))
+        .filter(Boolean);
+    } else if (v === 'true' || v === 'false') {
+      v = v === 'true';
+    } else {
+      v = v.replace(/^["']|["']$/g, '');
+    }
+    meta[kv[1]] = v;
+  }
+  return { meta, body: src.slice(m[0].length) };
+}
+
+function makeMarked() {
+  const marked = new Marked({ gfm: true });
+  const seen = new Map();
+  marked.use({
+    renderer: {
+      heading({ tokens, depth }) {
+        const html = this.parser.parseInline(tokens);
+        let id = slugify(html) || 'section';
+        const n = seen.get(id) || 0;
+        seen.set(id, n + 1);
+        if (n) id += `-${n + 1}`;
+        // Post titles are the page's h1, so headings inside start at h2.
+        const level = Math.min(6, Math.max(2, depth));
+        return `<h${level} id="${id}"><a class="anchor" href="#${id}" aria-hidden="true" tabindex="-1">#</a>${html}</h${level}>\n`;
+      },
+      link({ href, title, tokens }) {
+        const text = this.parser.parseInline(tokens);
+        const external = /^https?:\/\//i.test(href);
+        const attrs = external ? ' target="_blank" rel="noopener noreferrer"' : '';
+        return `<a href="${esc(href)}"${title ? ` title="${esc(title)}"` : ''}${attrs}>${text}</a>`;
+      },
+      image({ href, title, text }) {
+        return `<img src="${esc(href)}" alt="${esc(text || '')}"${title ? ` title="${esc(title)}"` : ''} loading="lazy" decoding="async">`;
+      },
+      table(token) {
+        // wide tables scroll inside their own box, never the page
+        const head = token.header.map((c) => `<th>${this.parser.parseInline(c.tokens)}</th>`).join('');
+        const rows = token.rows
+          .map((r) => `<tr>${r.map((c) => `<td>${this.parser.parseInline(c.tokens)}</td>`).join('')}</tr>`)
+          .join('');
+        return `<div class="table-wrap"><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div>\n`;
+      },
+    },
+  });
+  return marked;
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+export function prettyDate(iso) {
+  const m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]} ${m[1]}` : String(iso);
+}
+
+/**
+ * Reads every Markdown file in `dir`. The file name (minus an optional
+ * leading date) is the slug: `2026-12-01-my-post.md` -> `my-post`.
+ * Posts with `draft: true` are skipped unless `drafts` is set.
+ */
+export function loadPosts(dir, { drafts = false } = {}) {
+  if (!existsSync(dir)) return [];
+  const posts = [];
+  for (const file of readdirSync(dir).sort()) {
+    if (!file.endsWith('.md') || file.startsWith('_')) continue;
+    const { meta, body } = frontMatter(readFileSync(join(dir, file), 'utf8'));
+    if (meta.draft && !drafts) continue;
+    const base = file.replace(/\.md$/, '');
+    const dated = base.match(/^(\d{4}-\d{2}-\d{2})-(.+)$/);
+    const slug = slugify(meta.slug || (dated ? dated[2] : base));
+    const date = String(meta.date || (dated ? dated[1] : '1970-01-01'));
+    const words = body.split(/\s+/).filter(Boolean).length;
+    posts.push({
+      slug,
+      file,
+      title: meta.title || slug,
+      date,
+      dateText: prettyDate(date),
+      kind: meta.kind || 'note',
+      summary: meta.summary || '',
+      tags: Array.isArray(meta.tags) ? meta.tags : meta.tags ? [meta.tags] : [],
+      project: meta.project || '',
+      figure: meta.figure || '',
+      draft: !!meta.draft,
+      minutes: Math.max(1, Math.round(words / 210)),
+      html: makeMarked().parse(body),
+    });
+  }
+  posts.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.slug.localeCompare(b.slug)));
+  return posts;
+}

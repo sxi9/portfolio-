@@ -35,7 +35,8 @@
             });
           }
           var calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
-          if (!calm && !sessionStorage.getItem('sxi9-booted')) d.classList.add('booting');
+          // the boot sequence belongs to the home page only
+          if (!calm && !d.dataset.page && !sessionStorage.getItem('sxi9-booted')) d.classList.add('booting');
         } catch (e) {}
         // If the main script never arrives, do not leave the page hidden
         // behind the boot screen or its scroll-in animations.

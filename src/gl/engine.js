@@ -118,6 +118,7 @@ export class AsciiEngine {
         uRowOrigin: { value: 0 },
         uMouse: { value: new THREE.Vector2(-1e5, -1e5) },
         uMouseOn: { value: 0 },
+        uStatic: { value: 1 },
         uGamma: { value: 0.72 },
         uGain: { value: 1.0 },
         uBlack: { value: 0.018 },
@@ -126,8 +127,19 @@ export class AsciiEngine {
         uEdge: { value: 1.0 },
         uNear: { value: FIG_NEAR },
         uFar: { value: FIG_FAR },
+        tNote: { value: null },
+        uNote: { value: new THREE.Vector3(0, 0, 0) },
+        uTextBase: { value: 14 },
       },
     });
+
+    // The hidden line: up to 64 character codes in a one-row texture.
+    this.note = { el: null, len: 0, data: new Uint8Array(64) };
+    this.noteTex = new THREE.DataTexture(this.note.data, 64, 1, THREE.RedFormat, THREE.UnsignedByteType);
+    this.noteTex.minFilter = THREE.NearestFilter;
+    this.noteTex.magFilter = THREE.NearestFilter;
+    this.noteTex.needsUpdate = true;
+    this.cellsMat.uniforms.tNote.value = this.noteTex;
 
     this.glyphMat = new THREE.RawShaderMaterial({
       glslVersion: THREE.GLSL3,
@@ -160,14 +172,21 @@ export class AsciiEngine {
     window.addEventListener('orientationchange', this._onResize, { passive: true });
 
     this._onPointer = (e) => {
-      if (e.pointerType === 'touch') return;
       this.mouse.cx = e.clientX;
       this.mouse.cy = e.clientY;
       this.mouse.target = 1;
+      if (e.pointerType === 'touch') {
+        // A finger is a light too, but it leaves: let it linger, then fade.
+        clearTimeout(this._touchOff);
+        this._touchOff = setTimeout(() => (this.mouse.target = 0), 1800);
+        return;
+      }
+      // only a mouse steers the camera; a thumb is busy scrolling
       this.mouse.nx = (e.clientX / window.innerWidth) * 2 - 1;
       this.mouse.ny = (e.clientY / window.innerHeight) * 2 - 1;
     };
     window.addEventListener('pointermove', this._onPointer, { passive: true });
+    window.addEventListener('pointerdown', this._onPointer, { passive: true });
     document.documentElement.addEventListener('pointerleave', () => (this.mouse.target = 0));
 
     document.addEventListener('visibilitychange', () => {
@@ -209,6 +228,19 @@ export class AsciiEngine {
   setCharset(name) {
     this.charset = name;
     this.layout(true);
+  }
+
+  /**
+   * Text the ASCII layer prints in the middle of `el`, but only where the
+   * cursor's light falls on it. One line, up to 64 printable ASCII characters.
+   */
+  setNote(el, text) {
+    const s = String(text || '').slice(0, 64);
+    this.note.el = el || null;
+    this.note.len = el ? s.length : 0;
+    this.note.data.fill(0);
+    for (let i = 0; i < s.length; i++) this.note.data[i] = s.charCodeAt(i) & 0x7f;
+    this.noteTex.needsUpdate = true;
   }
 
   glitch(amount = 0.6, decay = 2.5) {
@@ -293,6 +325,7 @@ export class AsciiEngine {
     cu.tDepth.value = this.sceneRT.depthTexture;
     cu.uGrid.value.set(this.cols, this.rows);
     cu.uLevels.value = this.atlas.levels;
+    cu.uTextBase.value = this.atlas.textBase;
 
     const gu = this.glyphMat.uniforms;
     gu.tCells.value = this.cellsRT.texture;
@@ -546,7 +579,19 @@ export class AsciiEngine {
     cu.uGlitch.value = this.glitchAmount;
     cu.uRowOrigin.value = r0;
     cu.uMouse.value.set(m.x ?? -1e5, m.y ?? -1e5);
-    cu.uMouseOn.value = this.reduced ? 0 : m.on;
+    cu.uMouseOn.value = m.on;
+    cu.uStatic.value = this.reduced ? 0 : 1;
+    const note = cu.uNote.value.set(0, 0, 0);
+    if (this.note.len && this.note.el) {
+      const r = this.note.el.getBoundingClientRect();
+      if (r.width > 0 && r.bottom > -200 && r.top < window.innerHeight + 200) {
+        note.set(
+          Math.max(0, Math.round(((r.left + r.width / 2) * dpr) / cellW - this.note.len / 2)),
+          Math.floor(((r.top + r.height / 2 + sy) * dpr - r0 * cellH) / cellH),
+          this.note.len,
+        );
+      }
+    }
     this.quad.material = this.cellsMat;
     renderer.setRenderTarget(this.cellsRT);
     renderer.render(this.quadScene, this.quadCam);

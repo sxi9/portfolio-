@@ -59,6 +59,8 @@ export function initNav() {
     },
     { rootMargin: '-45% 0px -54% 0px' },
   );
+  // Pages without sections (the blog) keep the link the server marked active.
+  if (!sections.length) return;
   sections.forEach((s) => io.observe(s));
   setActive('top');
 }

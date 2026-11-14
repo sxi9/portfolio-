@@ -110,7 +110,10 @@ export function buildAtlas({ cellW, cellH, family, weight = 700, levels = 14, ch
     }
   }
 
-  const glyphs = [...ramp, ...EDGE_GLYPHS];
+  // Layout of the atlas row: ramp, then the four edge glyphs, then every
+  // printable ASCII character (33..126) so the engine can also set real text.
+  const text = Array.from({ length: 94 }, (_, i) => String.fromCharCode(33 + i));
+  const glyphs = [...ramp, ...EDGE_GLYPHS, ...text];
   const canvas = document.createElement('canvas');
   canvas.width = glyphs.length * cellW;
   canvas.height = cellH;
@@ -126,5 +129,12 @@ export function buildAtlas({ cellW, cellH, family, weight = 700, levels = 14, ch
   texture.colorSpace = THREE.NoColorSpace;
   texture.needsUpdate = true;
 
-  return { texture, levels: ramp.length, count: glyphs.length, ramp: ramp.join(''), fontPx };
+  return {
+    texture,
+    levels: ramp.length,
+    textBase: ramp.length + EDGE_GLYPHS.length,
+    count: glyphs.length,
+    ramp: ramp.join(''),
+    fontPx,
+  };
 }

@@ -1,24 +1,57 @@
 // A small command console over the same content the page shows.
 // Open with the backtick key, the button in the top bar, or the hero button.
 
-import { profile, about, experience, featured, archive, skills, certifications, sections, categories } from '../content.js';
+import { profile, about, experience, education, featured, archive, skills, certifications, sections, categories } from '../content.js';
 import { esc } from '../render.js';
 import { themeNames, currentTheme, applyTheme } from './theme.js';
+import { submit, found, TOTAL } from './flags.js';
 
 const CHARSETS = ['classic', 'measured', 'dense', 'binary', 'minimal'];
 const pad = (s, n) => String(s).padEnd(n, ' ');
 
+// Flag two of three: listed by `ls -a`, printed by `cat .flag`, still encoded.
+const DOTFLAG = 'ZmxhZ3tlbnVtZXJhdGVfYmVmb3JlX3lvdV9leHBsb2l0fQ==';
+
+const HINTS = [
+  'The first never left the building. Read what the page is made of.',
+  'The second sits in a file you have not listed yet. Not everything shows without -a.',
+  'The third hides in the dark under the toolkit. Bring a light, and move it slowly.',
+];
+
+const TROPHY = String.raw`
+      ___________
+     '._==_==_=_.'
+     .-\:      /-.
+    | (|:.     |) |
+     '-|:.     |-'
+       \::.    /
+        '::. .'
+          ) (
+        _.' '._
+       '-------'`;
+
 export function initTerminal({ getEngine }) {
   const root = document.querySelector('[data-terminal]');
-  if (!root) return { open() {}, close() {} };
+  if (!root) return { open() {}, close() {}, toggle() {} };
   const out = root.querySelector('[data-term-out]');
   const form = root.querySelector('[data-term-form]');
   const input = root.querySelector('[data-term-in]');
   const prompt = `${profile.handle}@intel:~$`;
+  // '' on the home page, '../' on a blog page
+  const home = document.documentElement.dataset.home || '';
+  const onHome = !document.documentElement.dataset.page;
+  const blogBase = onHome ? './blog/' : './';
   const history = [];
   let hi = 0;
   let opener = null;
   let greeted = false;
+
+  let posts = [];
+  try {
+    posts = JSON.parse(document.getElementById('posts-data')?.textContent || '[]');
+  } catch {
+    posts = [];
+  }
 
   const print = (html, cls = 't-out') => {
     const div = document.createElement('div');
@@ -33,11 +66,18 @@ export function initTerminal({ getEngine }) {
     div.dataset.prompt = prompt;
   };
 
+  /** Scrolls to an element on this page, or goes to it on the home page. */
   const goto = (id) => {
     const el = document.getElementById(id);
-    if (!el) return false;
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    return true;
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return true;
+    }
+    if (!onHome) {
+      window.location.href = `${home}#${id}`;
+      return true;
+    }
+    return false;
   };
 
   const findProject = (q) => {
@@ -50,9 +90,23 @@ export function initTerminal({ getEngine }) {
     );
   };
 
+  const flagStatus = () => {
+    const have = found();
+    const row = (n, where) => `  [${have.has(n) ? '<b>x</b>' : ' '}] flag ${n}  ${have.has(n) ? 'captured' : where}`;
+    return [
+      `<b>${have.size} of ${TOTAL}</b> captured`,
+      row(1, 'in the page itself'),
+      row(2, 'behind this terminal'),
+      row(3, 'in the ASCII layer'),
+      '',
+      have.size >= TOTAL
+        ? 'All three. The <b>ghost</b> theme is yours: <b>theme ghost</b>.'
+        : 'Submit one with <b>flag flag{...}</b>. Stuck? <b>hint</b>.',
+    ].join('\n');
+  };
+
   const commands = {
     help: {
-      about: 'this list',
       run: () =>
         [
           '<b>who</b>',
@@ -65,11 +119,14 @@ export function initTerminal({ getEngine }) {
           '<b>work</b>',
           `  ${pad('ls [-a]', 22)}featured projects (-a: everything)`,
           `  ${pad('open &lt;name&gt;', 28)}jump to a project, or open its link`,
+          `  ${pad('blog', 22)}case studies and notes`,
+          `  ${pad('read &lt;post&gt;', 28)}open a post`,
           `  ${pad('cd &lt;section&gt;', 28)}scroll to a section`,
           '<b>this page</b>',
-          `  ${pad('theme [name]', 22)}${themeNames.join(' | ')}`,
+          `  ${pad('theme [name]', 22)}${themeNames().join(' | ')}`,
           `  ${pad('charset [name]', 22)}${CHARSETS.join(' | ')}`,
           `  ${pad('fetch', 22)}system summary`,
+          `  ${pad('flags', 22)}three are hidden on this site`,
           `  ${pad('clear', 22)}clear the screen`,
           `  ${pad('exit', 22)}close the terminal (or press Esc)`,
         ].join('\n'),
@@ -89,6 +146,11 @@ export function initTerminal({ getEngine }) {
               '\n' +
               j.points.map((p) => `  - ${esc(p)}`).join('\n'),
           )
+          .concat(
+            education.length
+              ? [`<b>education</b>\n${education.map((e) => `  ${esc(e.school)}  ${esc(e.degree || '')}  (${esc(e.span || '')})`).join('\n')}`]
+              : [],
+          )
           .join('\n\n'),
     },
     skills: {
@@ -106,21 +168,97 @@ export function initTerminal({ getEngine }) {
           `mail      <a href="mailto:${profile.links.email}">${esc(profile.links.email)}</a>`,
           `github    <a href="${profile.links.github}" target="_blank" rel="noopener noreferrer">${esc(profile.links.github)}</a>`,
           `linkedin  <a href="${profile.links.linkedin}" target="_blank" rel="noopener noreferrer">${esc(profile.links.linkedin)}</a>`,
+          profile.links.resume
+            ? `resume    <a href="${esc(home + profile.links.resume.replace(/^\.\//, ''))}" target="_blank" rel="noopener noreferrer">download</a>`
+            : '',
           `base      ${esc(profile.location)}`,
-        ].join('\n'),
+        ]
+          .filter(Boolean)
+          .join('\n'),
     },
     ls: {
       run: (args) => {
+        const all = args.some((a) => /^-\w*a/.test(a));
         const rows = featured.map(
           (p) => `<b>${pad(p.id, 16)}</b>${pad(categories[p.cat], 9)}${p.status === 'live' ? '<i>live</i>  ' : '      '}${esc(p.kicker)}`,
         );
-        if (args.includes('-a') || args.includes('-la') || args.includes('-al')) {
+        if (all) {
+          rows.unshift('<u>.flag</u>', '');
           rows.push('');
           archive.forEach((a) => rows.push(`${pad(a.name, 26)}${pad(a.cat, 7)}${a.year}`));
         } else {
           rows.push('', `${archive.length} more in the archive: try <b>ls -a</b>`);
         }
         return rows.join('\n');
+      },
+    },
+    cat: {
+      run: (args) => {
+        const f = (args[0] || '').replace(/^\.\//, '');
+        if (!f) return 'usage: cat &lt;file&gt;';
+        if (f === '.flag') return `${DOTFLAG}\n<u>encoded, not encrypted.</u>`;
+        if (f === 'about.md' || f === 'about') return commands.about.run();
+        if (f === 'skills.json') return commands.skills.run();
+        if (f === 'experience.log') return commands.experience.run();
+        return `cat: ${esc(f)}: No such file`;
+      },
+    },
+    base64: {
+      hidden: true,
+      run: (args) => {
+        const decode = args[0] === '-d' || args[0] === '--decode';
+        const text = (decode ? args.slice(1) : args).join(' ');
+        if (!text) return 'usage: base64 [-d] &lt;text&gt;';
+        try {
+          return esc(decode ? atob(text) : btoa(text));
+        } catch {
+          return 'base64: invalid input';
+        }
+      },
+    },
+    flags: { run: flagStatus },
+    flag: {
+      hidden: true,
+      run: (args) => {
+        const value = args.join(' ');
+        if (!value) return flagStatus();
+        const res = submit(value);
+        if (!res.ok) return '<i>Not a flag.</i> They look like flag{...}.';
+        if (res.already) return `Flag ${res.n} again. You already have it: ${res.count} of ${TOTAL}.`;
+        getEngine()?.glitch(0.9, 1.8);
+        if (res.complete) {
+          return `<b>${esc(TROPHY)}</b>\n\n<b>Flag ${res.n} captured. That is all ${TOTAL}.</b>\nYou read the source, enumerated before exploiting, and brought a light.\nThe <b>ghost</b> theme is unlocked: <b>theme ghost</b>.`;
+        }
+        return `<b>Flag ${res.n} captured.</b> ${res.count} of ${TOTAL}.`;
+      },
+    },
+    hint: {
+      hidden: true,
+      run: () => {
+        const have = found();
+        const open = [1, 2, 3].filter((n) => !have.has(n));
+        if (!open.length) return 'Nothing left to find.';
+        return open.map((n) => `flag ${n}: ${HINTS[n - 1]}`).join('\n');
+      },
+    },
+    blog: {
+      run: () => {
+        if (!posts.length) return 'No posts yet.';
+        return posts
+          .map((p) => `<b>${pad(p.slug, 22)}</b>${pad(p.date, 14)}${esc(p.title)}`)
+          .concat(['', 'Open one with <b>read &lt;name&gt;</b>.'])
+          .join('\n');
+      },
+    },
+    read: {
+      hidden: true,
+      run: (args) => {
+        const q = (args[0] || '').toLowerCase();
+        if (!q) return commands.blog.run();
+        const p = posts.find((x) => x.slug === q) || posts.find((x) => x.slug.includes(q) || x.title.toLowerCase().includes(q));
+        if (!p) return `read: no post matches "${esc(q)}". Try <b>blog</b>.`;
+        window.location.href = `${blogBase}${p.slug}.html`;
+        return `opening ${esc(p.title)}`;
       },
     },
     open: {
@@ -152,9 +290,11 @@ export function initTerminal({ getEngine }) {
     },
     theme: {
       run: (args) => {
+        const names = themeNames();
         const name = args[0];
-        if (!name) return `current: <b>${currentTheme()}</b>\navailable: ${themeNames.join('  ')}`;
-        if (!themeNames.includes(name)) return `theme: unknown theme "${esc(name)}". Available: ${themeNames.join('  ')}`;
+        if (!name) return `current: <b>${currentTheme()}</b>\navailable: ${names.join('  ')}`;
+        if (name === 'ghost' && !names.includes(name)) return 'theme: <i>ghost is locked.</i> It answers to <b>flags</b>.';
+        if (!names.includes(name)) return `theme: unknown theme "${esc(name)}". Available: ${names.join('  ')}`;
         applyTheme(name);
         return `theme set to <b>${name}</b>`;
       },
@@ -182,8 +322,10 @@ export function initTerminal({ getEngine }) {
           `<b>role</b>      ${esc(profile.role)}, ${esc(profile.company)}`,
           `<b>base</b>      ${esc(profile.location)}`,
           `<b>projects</b>  ${featured.length} featured, ${archive.length} archived`,
+          `<b>posts</b>     ${posts.length}`,
           `<b>renderer</b>  three.js -> ASCII, ${grid}`,
           `<b>theme</b>     ${currentTheme()}`,
+          `<b>flags</b>     ${found().size} of ${TOTAL}`,
           `<b>trackers</b>  0`,
         ].join('\n');
       },
@@ -213,7 +355,6 @@ export function initTerminal({ getEngine }) {
     work: 'experience',
     projects: 'ls',
     dir: 'ls',
-    cat: 'about',
     goto: 'cd',
     neofetch: 'fetch',
     cls: 'clear',
@@ -222,6 +363,10 @@ export function initTerminal({ getEngine }) {
     whois: 'whoami',
     certifications: 'certs',
     themes: 'theme',
+    notes: 'blog',
+    posts: 'blog',
+    hints: 'hint',
+    ctf: 'flags',
   };
   const names = Object.keys(commands).filter((k) => !commands[k].hidden);
 
@@ -235,6 +380,11 @@ export function initTerminal({ getEngine }) {
     const key = alias[name.toLowerCase()] || name.toLowerCase();
     const cmd = commands[key];
     if (!cmd) {
+      // a bare flag typed at the prompt counts as a submission
+      if (/^flag\{.*\}$/.test(raw)) {
+        print(commands.flag.run([raw]));
+        return;
+      }
       print(`${esc(name)}: command not found. Type <b>help</b>.`);
       return;
     }

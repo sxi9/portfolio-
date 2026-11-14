@@ -1,18 +1,21 @@
 import { themes } from '../content.js';
+import { allFound } from './flags.js';
 
 const KEYS = ['ink', 'hot', 'cool', 'bg'];
 const listeners = new Set();
 const root = document.documentElement;
 
-export const themeNames = Object.keys(themes);
+/** Palettes on offer right now: locked ones appear once every flag is found. */
+export const themeNames = () => Object.keys(themes).filter((k) => !themes[k].locked || allFound());
 
 export function currentTheme() {
   const name = root.dataset.palette;
-  return themes[name] ? name : themeNames[0];
+  return themeNames().includes(name) ? name : themeNames()[0];
 }
 
 export function applyTheme(name, { persist = true } = {}) {
-  const key = themes[name] ? name : themeNames[0];
+  const names = themeNames();
+  const key = names.includes(name) ? name : names[0];
   const t = themes[key];
   root.dataset.palette = key;
   for (const k of KEYS) root.style.setProperty(`--${k}`, t[k]);
@@ -20,7 +23,8 @@ export function applyTheme(name, { persist = true } = {}) {
   document.querySelectorAll('[data-theme-name]').forEach((el) => (el.textContent = key));
   if (persist) {
     try {
-      localStorage.setItem('sxi9-theme', JSON.stringify({ name: key, ...t }));
+      const { ink, hot, cool, bg } = t;
+      localStorage.setItem('sxi9-theme', JSON.stringify({ name: key, ink, hot, cool, bg }));
     } catch {
       /* private mode: the theme just will not persist */
     }
@@ -30,8 +34,9 @@ export function applyTheme(name, { persist = true } = {}) {
 }
 
 export function nextTheme() {
-  const i = themeNames.indexOf(currentTheme());
-  return applyTheme(themeNames[(i + 1) % themeNames.length]);
+  const names = themeNames();
+  const i = names.indexOf(currentTheme());
+  return applyTheme(names[(i + 1) % names.length]);
 }
 
 export function onTheme(fn) {

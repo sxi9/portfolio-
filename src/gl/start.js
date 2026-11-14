@@ -4,6 +4,7 @@
 import { AsciiEngine, webglAvailable } from './engine.js';
 import { createShaft } from './shaft.js';
 import { FIGURES } from './figures/index.js';
+import { hiddenNote } from './note.js';
 
 const FAMILY = '"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace';
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -30,6 +31,8 @@ export async function startScene({ theme, reduced }) {
     const make = FIGURES[el.dataset.figure];
     if (make) engine.addStage(el, make);
   });
+
+  engine.setNote(document.querySelector('[data-glyph-slot]'), hiddenNote());
 
   // The caller starts the loop (after the boot sequence), so nothing is
   // rendered behind a screen nobody can see through.

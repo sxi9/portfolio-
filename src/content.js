@@ -24,7 +24,12 @@ export const profile = {
     github: 'https://github.com/sxi9',
     linkedin: 'https://www.linkedin.com/in/siva-sastha-sai-krishna-040719296',
     email: 'sivasasthasaikrishna@gmail.com',
+    // Put the file in public/ and set e.g. './resume.pdf' to show a download link.
+    resume: '',
   },
+  // Put a photo in public/ and set e.g. './portrait.jpg': the identity card
+  // then draws it in ASCII and resolves to the real picture now and then.
+  portrait: '',
 };
 
 export const about = {
@@ -104,6 +109,10 @@ export const experience = [
   },
 ];
 
+// Shown under the experience timeline once it has entries, e.g.
+//   { school: 'University name', degree: 'B.Tech, Computer Science', span: '2021 - 2025', note: 'optional line' }
+export const education = [];
+
 // status: live | active | experimental | wip | archived
 // cat:    sec | ai | infra | web | hw
 export const featured = [
@@ -146,6 +155,7 @@ export const featured = [
     ],
     stack: ['React', 'Vite', 'Fastify', 'SQLite', 'Leaflet', 'STIX 2.1', 'Docker + Caddy'],
     links: [{ label: 'source', href: 'https://github.com/sxi9/investigation' }],
+    shot: { src: 'shots/investigation.webp', w: 1440, h: 900, alt: 'The investigation board with a sample case open: evidence cards pinned to a cork board and joined by red thread' },
   },
   {
     id: 'andro',
@@ -184,6 +194,7 @@ export const featured = [
     ],
     stack: ['Kotlin 2.0', 'Jetpack Compose', 'Material 3', 'Coroutines', 'Room'],
     links: [{ label: 'source', href: 'https://github.com/sxi9/samurai-scan' }],
+    shot: { src: 'shots/samurai-scan.webp', w: 1348, h: 968, alt: 'Three screens of the Samurai Scan app: the dashboard, the security audit and Sentry watch' },
   },
   {
     id: 'so101',
@@ -203,6 +214,7 @@ export const featured = [
     ],
     stack: ['Python', 'MuJoCo', 'Gymnasium', 'Stable-Baselines3', 'PyTorch', 'LeRobot'],
     links: [{ label: 'source', href: 'https://github.com/sxi9/so101-workcell' }],
+    shot: { src: 'shots/so101.webp', w: 400, h: 300, alt: 'The simulated arm sorting coloured cubes into two bins', moving: true },
   },
   {
     id: 'home-cluster',
@@ -222,6 +234,7 @@ export const featured = [
     ],
     stack: ['llama.cpp', 'Shell', 'Python', 'Kotlin', 'k3s', 'Tailscale'],
     links: [{ label: 'source', href: 'https://github.com/sxi9/home-cluster-' }],
+    shot: { src: 'shots/home-cluster.webp', w: 1440, h: 922, alt: 'The home-cluster dashboard: tokens per second, a model split across four devices, and each device with its memory and load' },
   },
   {
     id: 'msp',
@@ -241,6 +254,7 @@ export const featured = [
     ],
     stack: ['Go 1.24', 'SQLite', 'Preact', 'TypeScript', 'Kotlin'],
     links: [{ label: 'source', href: 'https://github.com/sxi9/msp' }],
+    shot: { src: 'shots/msp.webp', w: 1440, h: 940, alt: 'The MSP fleet view: one enrolled Linux device with status, CPU, memory and disk' },
   },
   {
     id: 'whm',
@@ -260,6 +274,7 @@ export const featured = [
     ],
     stack: ['Node.js 22', 'Express', 'React', 'SQLite', 'systemd'],
     links: [{ label: 'source', href: 'https://github.com/sxi9/whm' }],
+    shot: { src: 'shots/whm.webp', w: 1440, h: 900, alt: 'The WHM home dashboard: a tool grid, server statistics and monitored services' },
   },
 ];
 
@@ -606,6 +621,7 @@ export const census = [
   ['Kotlin', 1],
 ];
 
+// Add `href` to any entry to link its verification page.
 export const certifications = [
   { name: 'Certified in Cybersecurity (CC)', by: 'ISC2' },
   { name: 'Fortinet Certified Associate in Cybersecurity', by: 'Fortinet' },
@@ -621,6 +637,7 @@ export const sections = [
   { id: 'projects', label: 'arsenal', nav: 'projects' },
   { id: 'archive', label: 'archive', nav: null },
   { id: 'skills', label: 'toolkit', nav: 'skills' },
+  { id: 'blog', label: 'field notes', nav: 'blog' }, // only shown when posts/ has posts
   { id: 'contact', label: 'signal', nav: 'contact' },
 ];
 
@@ -630,6 +647,8 @@ export const themes = {
   amber: { ink: '#ffb52e', hot: '#ff5a3c', cool: '#ffe9a8', bg: '#070401' },
   ice: { ink: '#7fd8ff', hot: '#ff6b8b', cool: '#b9a6ff', bg: '#02050a' },
   ronin: { ink: '#ff5d73', hot: '#ffd166', cool: '#f6c6cf', bg: '#080203' },
+  // locked: not offered until every hidden flag has been found
+  ghost: { ink: '#d6ccff', hot: '#ff6ad5', cool: '#7df9ff', bg: '#06050c', locked: true },
 };
 
 export const HERO_BANNER = String.raw` ________  ___  ___      ___ ________

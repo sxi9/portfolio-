@@ -45,15 +45,52 @@ terminal and the prerendered HTML all follow.
 | Add a smaller project | `archive` |
 | Add or recolour a theme | `themes`: four colours each (`ink`, `hot`, `cool`, `bg`) |
 | Replace the big name banner | `HERO_BANNER` (any figlet output works) |
+| Show a screenshot on a featured project | add `shot: { src, w, h, alt }` and put the image in `public/shots/` |
+
+Four slots are wired up and stay hidden until they have something in them:
+
+| Slot | How to fill it |
+| --- | --- |
+| R&eacute;sum&eacute; link | put the PDF in `public/` and set `profile.links.resume` (for example `'./resume.pdf'`) |
+| ASCII portrait on the identity card | put a photo in `public/` and set `profile.portrait` (for example `'./portrait.jpg'`) |
+| Education | add entries to `education` |
+| Certificate verification links | add `href` to an entry in `certifications` |
 
 Things worth checking, because they were carried over from older sources rather than confirmed:
 
 - **Certifications** come from the previous portfolio (September 2025).
-- **Contact email** is the one published on the previous portfolio. There is no phone number and no
-  resume link on this site; add them to `profile.links` and `src/render.js` if you want them.
-- **Education** is not on the page: add a section to `content.js` and `render.js` if you want one.
+- **Contact email** is the one published on the previous portfolio. There is no phone number.
+- **The two case studies** in `posts/` were written from the repositories' own documentation. Read
+  them before you publish: they speak in your voice.
 - `og:image` in `index.html` is a relative URL. Once the site has a home, make it absolute so link
   previews work everywhere.
+
+## Write a post
+
+The blog is a folder of Markdown files. Add one to `posts/` and it becomes a page, appears in the
+"field notes" section on the home page, and shows up in the terminal's `blog` command.
+
+```markdown
+---
+title: What I learned running a honeypot for a month
+date: 2026-12-01
+kind: note
+summary: One or two sentences for the card and the link preview.
+tags: [honeypot, linux]
+figure: rack
+---
+
+The post itself, in Markdown. Headings start at `##`.
+```
+
+- The file name is the address: `posts/2026-12-01-honeypot.md` becomes `blog/honeypot.html`.
+- `kind` is free text shown as a badge (`note`, `case study`, `write-up`).
+- `figure` is optional: any model from the table below turns up next to the title.
+- `project: <id>` links a post to a featured project, which then gets a button to it.
+- `draft: true` keeps a post out of the build but visible in `npm run dev`.
+- Images go in `public/blog/` and are referenced as `![alt](./picture.png)`.
+
+With no files in `posts/`, the section and the nav link disappear on their own.
 
 ## The figures
 
@@ -85,10 +122,27 @@ Press `` ` `` (or the `>_` button). `help` lists everything; a few highlights:
 | --- | --- |
 | `ls`, `ls -a` | featured projects, or all of them |
 | `open leakwatch` | jump to a project (or open its link) |
+| `blog`, `read leakwatch` | list the posts, open one |
 | `cd projects` | scroll to a section |
+| `flags`, `hint` | three flags are hidden on the site; finding all of them unlocks a theme |
 | `theme amber` | `phosphor`, `amber`, `ice`, `ronin` |
 | `charset measured` | swap the character ramp: `classic`, `measured`, `dense`, `binary`, `minimal` |
 | `fetch` | a system summary, including the live character grid size |
+
+## Things that move
+
+**Screenshots that decode.** A featured project with a `shot` shows the real screenshot, drawn as
+characters. Pointing at it (or tapping it) erases the characters cell by cell and leaves the image.
+Without JavaScript the plain image is shown.
+
+**GitHub pulse.** The panel above the archive lists the most recently pushed public repositories and
+an activity graph. It is prerendered from a snapshot in `src/pulse-data.js`, then replaced with live
+data from `api.github.com` in the visitor's browser (cached for 45 minutes). This is the only request
+the site makes to another host. To switch it off, remove the `initPulse()` call in `src/main.js`.
+
+**Hidden flags.** One is in the page source, one behind the terminal, and one is printed by the
+ASCII layer only where the cursor's light falls. The checks are hashes in `src/ui/flags.js`; to
+change a flag, change the text where it is hidden and its hash there.
 
 ## Deploy
 
@@ -121,7 +175,8 @@ Actions tab. To publish on every push, uncomment the `push` trigger in that file
   the document; everything nearer slides past faster.
 
 Text is prerendered: `vite.config.js` runs `src/render.js` at build time and writes the content into
-`index.html`, so the page is readable before (and without) JavaScript. three.js loads as a separate
+`index.html` and one page per post under `blog/`, so every page is readable before (and without)
+JavaScript. three.js loads as a separate
 chunk while the boot sequence plays.
 
 Fallbacks: no WebGL 2 gives a static backdrop and placeholders; `prefers-reduced-motion` freezes the
@@ -132,22 +187,28 @@ resolution automatically.
 
 ```
 index.html              shell; content is injected at build time
-vite.config.js          the prerender plugin
+vite.config.js          renders the home page and every blog page to static HTML
+posts/                  blog posts in Markdown
+build/posts.js          Markdown and front matter -> post objects (build time only)
 src/content.js          every word on the site
 src/render.js           content -> HTML (runs in Node and in the browser)
+src/pulse-data.js       fallback snapshot for the GitHub pulse
 src/styles.css          the text layer
 src/main.js             wiring
-src/ui/                 boot sequence, nav and depth rail, terminal, themes, id card, tag cloud
+src/ui/                 boot sequence, nav and depth rail, terminal, themes, id card, tag cloud,
+                        screenshot decoder, GitHub pulse, flags
 src/gl/engine.js        the renderer described above
 src/gl/shaders.js       cells pass and glyph pass
 src/gl/atlas.js         glyph atlas and character ramps
 src/gl/shaft.js         the ambient world
 src/gl/figures/         one file per 3D model
+public/shots/           project screenshots
 scripts/                regenerates the globe's land mask
 ```
 
 ## Credits
 
 [three.js](https://threejs.org) (MIT), [JetBrains Mono](https://www.jetbrains.com/lp/mono/) (OFL 1.1),
-land mask derived from [Natural Earth](https://www.naturalearthdata.com) 110m data (public domain).
-No analytics, no cookies, no third-party requests.
+[marked](https://marked.js.org) (MIT, build time only), land mask derived from
+[Natural Earth](https://www.naturalearthdata.com) 110m data (public domain).
+No analytics and no cookies. The GitHub pulse is the one request to another host.

@@ -31,6 +31,7 @@ uniform float uGlitch;
 uniform float uRowOrigin;  // document row of the target's top row (stable hashing)
 uniform vec2 uMouse;       // cursor in cells: x, row from top
 uniform float uMouseOn;
+uniform float uStatic;     // 0 with reduced motion: the light stays, the flicker goes
 uniform float uGamma;
 uniform float uGain;
 uniform float uBlack;
@@ -39,6 +40,9 @@ uniform float uInkFloor;
 uniform float uEdge;
 uniform float uNear;
 uniform float uFar;
+uniform sampler2D tNote;   // character codes of the hidden line, one per texel
+uniform vec3 uNote;        // start column, row from the top, length (0 = none)
+uniform float uTextBase;   // atlas index of '!' (code 33)
 
 out vec4 outColor;
 
@@ -83,7 +87,7 @@ void main() {
   mc.y *= 2.0;
   float torch = uMouseOn * smoothstep(11.0, 0.0, length(mc));
   float staticN = hash21(docCell + floor(uTime * 3.0) * 1.37);
-  v = v * (1.0 + torch * 0.6) + torch * torch * step(0.86, staticN) * 0.14;
+  v = v * (1.0 + torch * 0.6) + torch * torch * step(0.86, staticN) * 0.14 * uStatic;
   v = clamp(v, 0.0, 1.0);
 
   // Stable per-cell noise keeps large flat areas from banding into stripes.
@@ -123,6 +127,18 @@ void main() {
       float nv = pow(clamp((nmx * uGain - uBlack) / (1.0 - uBlack), 0.0, 1.0), uGamma);
       gi = uLevels + e;
       v = clamp(nv * 0.8 + 0.3, 0.0, 1.0) * uEdge;
+    }
+  }
+
+  // A line of real text that is only there under the light.
+  float nx = cell.x - uNote.x;
+  if (uNote.z > 0.5 && abs(rowTop - uNote.y) < 0.5 && nx >= 0.0 && nx < uNote.z) {
+    float code = floor(texelFetch(tNote, ivec2(int(nx), 0), 0).r * 255.0 + 0.5);
+    float lit = smoothstep(0.1, 0.6, torch);
+    if (code > 32.5 && lit > 0.0) {
+      gi = uTextBase + code - 33.0;
+      ink = uHot;
+      v = lit;
     }
   }
 

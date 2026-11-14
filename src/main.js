@@ -9,6 +9,8 @@ import { initTilt } from './ui/tilt.js';
 import { initArchive } from './ui/archive.js';
 import { initTagSphere } from './ui/tagsphere.js';
 import { initTerminal } from './ui/terminal.js';
+import { initShots } from './ui/shots.js';
+import { initPulse } from './ui/pulse.js';
 
 window.__sxi9 = true; // tells the inline script in index.html that we made it
 
@@ -25,6 +27,8 @@ initNav();
 initArchive();
 initTilt({ reduced, seed: profile.handle });
 initTagSphere({ reduced });
+initShots({ reduced });
+initPulse();
 const terminal = initTerminal({ getEngine: () => engine });
 
 document.addEventListener('click', (e) => {
