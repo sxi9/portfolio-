@@ -112,7 +112,7 @@ export function initTerminal({ getEngine }) {
     ls: {
       run: (args) => {
         const rows = featured.map(
-          (p) => `<b>${pad(p.id, 16)}</b>${pad(categories[p.cat], 9)}${p.status === 'live' ? '<i>live</i>  ' : ''}${esc(p.kicker)}`,
+          (p) => `<b>${pad(p.id, 16)}</b>${pad(categories[p.cat], 9)}${p.status === 'live' ? '<i>live</i>  ' : '      '}${esc(p.kicker)}`,
         );
         if (args.includes('-a') || args.includes('-la') || args.includes('-al')) {
           rows.push('');

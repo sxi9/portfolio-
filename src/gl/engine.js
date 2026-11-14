@@ -291,7 +291,9 @@ export class AsciiEngine {
     gu.uGrid.value.set(this.cols, this.rows);
 
     this.ambient?.resize?.({ aspect: vw / lvh, vw, lvh });
-    if (!this.running) this.frame(0, true);
+    // Resizing the canvas clears it, so repaint in the same task: no blank
+    // flash on resize or when the resolution steps down.
+    this.frame(0, true);
   }
 
   // --------------------------------------------------------------- stages --
