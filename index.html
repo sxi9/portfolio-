@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en" data-theme="phosphor">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Siva Sastha Sai Krishna / Intelligence Analyst / sxi9</title>
+    <meta
+      name="description"
+      content="Siva Sastha Sai Krishna (sxi9) is an Intelligence Analyst at ZeroFox in Bengaluru. Threat intelligence, OSINT and dark web reconnaissance by day; security tooling and self-hosted AI by night."
+    />
+    <meta name="author" content="Siva Sastha Sai Krishna" />
+    <meta name="theme-color" content="#020604" />
+    <meta name="color-scheme" content="dark" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Siva Sastha Sai Krishna / Intelligence Analyst" />
+    <meta
+      property="og:description"
+      content="Threat intelligence, security tooling and self-hosted AI. A 3D portfolio rendered entirely in ASCII."
+    />
+    <meta property="og:image" content="./og.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+    <script>
+      // Runs before first paint: restore the saved theme and decide whether
+      // the boot sequence plays (once per tab, never with reduced motion).
+      (function () {
+        var d = document.documentElement;
+        d.classList.add('js');
+        try {
+          var t = JSON.parse(localStorage.getItem('sxi9-theme') || 'null');
+          if (t && t.name) {
+            d.dataset.theme = t.name;
+            ['ink', 'hot', 'cool', 'bg'].forEach(function (k) {
+              if (/^#[0-9a-f]{6}$/i.test(t[k])) d.style.setProperty('--' + k, t[k]);
+            });
+          }
+          var calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+          if (!calm && !sessionStorage.getItem('sxi9-booted')) d.classList.add('booting');
+        } catch (e) {}
+        // If the main script never arrives, do not leave the page hidden
+        // behind the boot screen or its scroll-in animations.
+        setTimeout(function () {
+          if (!window.__sxi9) {
+            d.classList.remove('booting');
+            d.classList.add('no-reveal');
+          }
+        }, 4000);
+      })();
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <div id="ascii-layer" aria-hidden="true"></div>
+    <!--app-->
+    <noscript>
+      <p class="noscript">The 3D scenes need JavaScript. Everything else on this page works without it.</p>
+    </noscript>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
