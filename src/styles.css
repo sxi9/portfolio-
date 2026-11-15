@@ -220,6 +220,10 @@ main,
   }
 }
 
+.nb {
+  white-space: nowrap;
+}
+
 .sep {
   color: var(--faint);
   margin: 0 0.35em;

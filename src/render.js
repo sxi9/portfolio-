@@ -22,6 +22,10 @@ export const esc = (s) =>
   String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 
 const pad2 = (n) => String(n).padStart(2, '0');
+
+/** A title as HTML: short hyphenated tokens (model numbers, compounds) never break across lines. */
+const titleHtml = (s) =>
+  esc(s).replace(/[A-Za-z0-9]+(?:-[A-Za-z0-9]+)+/g, (m) => (m.length <= 14 ? `<span class="nb">${m}</span>` : m));
 const ext = 'target="_blank" rel="noopener noreferrer"';
 const PROMPT = `<span class="cmd__prompt">${esc(profile.handle)}@intel:~$</span>`;
 
@@ -507,7 +511,7 @@ function postList(posts, ctx, limit = Infinity) {
       <li class="note" data-reveal>
         <a class="note__link panel" href="${ctx.blog}${p.slug}.html">
           <p class="note__meta"><span class="note__kind">${esc(p.kind)}</span><time datetime="${esc(p.date)}">${esc(p.dateText)}</time><span>${p.minutes} min read</span></p>
-          <h3 class="note__title">${esc(p.title)}</h3>
+          <h3 class="note__title">${titleHtml(p.title)}</h3>
           <p class="note__summary">${esc(p.summary)}</p>
           ${tags(p.tags)}
           <span class="note__go" aria-hidden="true">read -&gt;</span>
@@ -686,7 +690,7 @@ export function renderPost({ post, posts = [] }) {
         <div class="post__intro">
           <p class="cmd" aria-hidden="true">${PROMPT} <span class="cmd__text">cat blog/${esc(post.slug)}.md</span></p>
           <p class="post__meta"><span class="note__kind">${esc(post.kind)}</span><time datetime="${esc(post.date)}">${esc(post.dateText)}</time><span>${post.minutes} min read</span></p>
-          <h1 class="post__title">${esc(post.title)}</h1>
+          <h1 class="post__title">${titleHtml(post.title)}</h1>
           ${post.summary ? `<p class="post__summary">${esc(post.summary)}</p>` : ''}
           ${tags(post.tags)}
         </div>
@@ -701,8 +705,8 @@ ${post.html}
           ${projLink}
         </div>
         <nav class="post__nav" aria-label="More notes">
-          ${older ? `<a href="${BLOG.blog}${older.slug}.html"><span>older</span><b>${esc(older.title)}</b></a>` : '<span></span>'}
-          ${newer ? `<a class="post__next" href="${BLOG.blog}${newer.slug}.html"><span>newer</span><b>${esc(newer.title)}</b></a>` : ''}
+          ${older ? `<a href="${BLOG.blog}${older.slug}.html"><span>older</span><b>${titleHtml(older.title)}</b></a>` : '<span></span>'}
+          ${newer ? `<a class="post__next" href="${BLOG.blog}${newer.slug}.html"><span>newer</span><b>${titleHtml(newer.title)}</b></a>` : ''}
         </nav>
       </footer>
     </article>`,
