@@ -62,8 +62,6 @@ Things worth checking, because they were carried over from older sources rather 
 - **Contact email** is the one published on the previous portfolio. There is no phone number.
 - **The two case studies** in `posts/` were written from the repositories' own documentation. Read
   them before you publish: they speak in your voice.
-- `og:image` in `index.html` is a relative URL. Once the site has a home, make it absolute so link
-  previews work everywhere.
 
 ## Write a post
 
@@ -161,12 +159,14 @@ change a flag, change the text where it is hidden and its hash there.
 
 ## Deploy
 
-**Vercel or Netlify.** Import the repository. Both detect Vite; the build command is `npm run build`
-and the output directory is `dist`. No other settings.
+**GitHub Pages (live).** The site is published at https://sxi9.github.io/portfolio-/ by
+`.github/workflows/pages.yml`: every push to the default branch builds it and deploys it, and the
+workflow can also be run by hand from the Actions tab. One-time setup, already needed only once:
+Settings, then Pages, then set the source to "GitHub Actions".
 
-**GitHub Pages.** A workflow is included at `.github/workflows/pages.yml`. In the repository go to
-Settings, then Pages, set the source to "GitHub Actions", then run "Deploy to GitHub Pages" from the
-Actions tab. To publish on every push, uncomment the `push` trigger in that file.
+**Vercel or Netlify.** Import the repository. Both detect Vite; the build command is `npm run build`
+and the output directory is `dist`. If you move the site, update the `og:image` URL in `index.html`,
+which points at the GitHub Pages address so link previews work everywhere.
 
 ## How the rendering works
 

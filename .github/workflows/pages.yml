@@ -1,26 +1,28 @@
 # Builds the site and publishes it to GitHub Pages.
 #
-# One-time setup: repository Settings -> Pages -> Source: "GitHub Actions".
-# Then run this workflow from the Actions tab. To publish on every push
-# instead, uncomment the `push` trigger below.
+# One-time setup: repository Settings -> Pages -> Build and deployment ->
+# Source: "GitHub Actions". After that, every push to the default branch
+# deploys, and the workflow can also be run by hand from the Actions tab.
 name: Deploy to GitHub Pages
 
 on:
+  push:
   workflow_dispatch:
-  # push:
-  #   branches: [main]
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
+# one deployment at a time; a newer push waits rather than cutting one off
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   build:
+    # only the default branch deploys; pushes to other branches do nothing
+    if: github.ref_name == github.event.repository.default_branch
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -28,6 +30,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - uses: actions/configure-pages@v5
       - run: npm ci
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
