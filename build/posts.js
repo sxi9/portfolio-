@@ -1,8 +1,8 @@
 // Build-time only: turns posts/*.md into post objects. Never imported by the
 // browser bundle (vite.config.js is the only caller).
 
-import { readdirSync, readFileSync, existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { readdirSync, readFileSync, existsSync, openSync, readSync, closeSync } from 'node:fs';
+import { join, basename } from 'node:path';
 import { Marked } from 'marked';
 
 const esc = (s) =>
@@ -41,8 +41,40 @@ function frontMatter(src) {
   return { meta, body: src.slice(m[0].length) };
 }
 
-function makeMarked() {
+/** Width and height of a PNG, GIF or WebP file, read from its header. */
+function imageSize(file) {
+  let fd;
+  try {
+    fd = openSync(file, 'r');
+    const b = Buffer.alloc(32);
+    readSync(fd, b, 0, 32, 0);
+    if (b.toString('ascii', 1, 4) === 'PNG') return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) };
+    if (b.toString('ascii', 0, 3) === 'GIF') return { w: b.readUInt16LE(6), h: b.readUInt16LE(8) };
+    if (b.toString('ascii', 0, 4) === 'RIFF' && b.toString('ascii', 8, 12) === 'WEBP') {
+      const kind = b.toString('ascii', 12, 16);
+      if (kind === 'VP8L') {
+        const v = b.readUInt32LE(21);
+        return { w: (v & 0x3fff) + 1, h: ((v >> 14) & 0x3fff) + 1 };
+      }
+      if (kind === 'VP8 ') return { w: b.readUInt16LE(26) & 0x3fff, h: b.readUInt16LE(28) & 0x3fff };
+      if (kind === 'VP8X') return { w: b.readUIntLE(24, 3) + 1, h: b.readUIntLE(27, 3) + 1 };
+    }
+  } catch {
+    /* unknown or missing: the image just has no size attributes */
+  } finally {
+    if (fd !== undefined) closeSync(fd);
+  }
+  return null;
+}
+
+function makeMarked(imageDir) {
   const marked = new Marked({ gfm: true });
+  const img = ({ href, title, text }) => {
+    // './picture.png' in a post is public/blog/picture.png
+    const local = imageDir && /^\.\/[^/]+$/.test(href) ? imageSize(join(imageDir, basename(href))) : null;
+    const size = local ? ` width="${local.w}" height="${local.h}"` : '';
+    return `<img src="${esc(href)}" alt="${esc(text || '')}"${size}${title ? ` title="${esc(title)}"` : ''} loading="lazy" decoding="async">`;
+  };
   const seen = new Map();
   marked.use({
     renderer: {
@@ -62,8 +94,19 @@ function makeMarked() {
         const attrs = external ? ' target="_blank" rel="noopener noreferrer"' : '';
         return `<a href="${esc(href)}"${title ? ` title="${esc(title)}"` : ''}${attrs}>${text}</a>`;
       },
-      image({ href, title, text }) {
-        return `<img src="${esc(href)}" alt="${esc(text || '')}"${title ? ` title="${esc(title)}"` : ''} loading="lazy" decoding="async">`;
+      image(token) {
+        return img(token);
+      },
+      // An image alone in its paragraph becomes a figure: the title is the
+      // caption, and the picture links to the full-size file.
+      paragraph({ tokens }) {
+        const only = tokens.filter((t) => !(t.type === 'text' && !t.text.trim()));
+        if (only.length === 1 && only[0].type === 'image') {
+          const t = only[0];
+          const caption = t.title ? `<figcaption>${esc(t.title)}</figcaption>` : '';
+          return `<figure class="prose__fig"><a href="${esc(t.href)}" target="_blank" rel="noopener">${img({ ...t, title: '' })}</a>${caption}</figure>\n`;
+        }
+        return `<p>${this.parser.parseInline(tokens)}</p>\n`;
       },
       table(token) {
         // wide tables scroll inside their own box, never the page
@@ -89,7 +132,7 @@ export function prettyDate(iso) {
  * leading date) is the slug: `2026-12-01-my-post.md` -> `my-post`.
  * Posts with `draft: true` are skipped unless `drafts` is set.
  */
-export function loadPosts(dir, { drafts = false } = {}) {
+export function loadPosts(dir, { drafts = false, imageDir = '' } = {}) {
   if (!existsSync(dir)) return [];
   const posts = [];
   for (const file of readdirSync(dir).sort()) {
@@ -99,6 +142,7 @@ export function loadPosts(dir, { drafts = false } = {}) {
     const base = file.replace(/\.md$/, '');
     const dated = base.match(/^(\d{4}-\d{2}-\d{2})-(.+)$/);
     const slug = slugify(meta.slug || (dated ? dated[2] : base));
+    // A time after the date (2026-11-15T18:00) orders posts written on the same day.
     const date = String(meta.date || (dated ? dated[1] : '1970-01-01'));
     const words = body.split(/\s+/).filter(Boolean).length;
     posts.push({
@@ -114,7 +158,7 @@ export function loadPosts(dir, { drafts = false } = {}) {
       figure: meta.figure || '',
       draft: !!meta.draft,
       minutes: Math.max(1, Math.round(words / 210)),
-      html: makeMarked().parse(body),
+      html: makeMarked(imageDir).parse(body),
     });
   }
   posts.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : a.slug.localeCompare(b.slug)));

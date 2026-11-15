@@ -29,7 +29,8 @@ function site() {
           import(pathToFileURL(join(root, 'src/render.js')).href),
           import(pathToFileURL(join(root, 'src/pulse-data.js')).href),
         ]);
-    return { render, pulse: data.pulseSnapshot, posts: loadPosts(postsDir, { drafts: !!server }) };
+    const imageDir = join(root, 'public', 'blog');
+    return { render, pulse: data.pulseSnapshot, posts: loadPosts(postsDir, { drafts: !!server, imageDir }) };
   };
 
   /** Turns the home page's shell into another page one folder down. */

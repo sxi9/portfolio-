@@ -17,6 +17,7 @@ import {
   sections,
   HERO_BANNER,
 } from './content.js';
+import { SAMURAI_H } from './ui/samurai-frames.js';
 
 export const esc = (s) =>
   String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -102,6 +103,14 @@ function rail(posts) {
 
 // -------------------------------------------------------------------- hero --
 
+// The banner as prerendered: bottom-aligned in a grid tall enough for the
+// running samurai, every row the same width.
+const bannerLines = HERO_BANNER.split('\n');
+const bannerCols = Math.max(...bannerLines.map((l) => l.length));
+const bannerText = [...Array(Math.max(0, SAMURAI_H - bannerLines.length)).fill(''), ...bannerLines]
+  .map((l) => l.padEnd(bannerCols))
+  .join('\n');
+
 function hero() {
   const resume = profile.links.resume
     ? `<a class="btn" href="${esc(profile.links.resume)}" ${ext}>r&eacute;sum&eacute;</a>`
@@ -111,7 +120,7 @@ function hero() {
     <div class="hero__text">
       <p class="eyebrow" data-reveal>// ${esc(profile.role.toLowerCase())} @ ${esc(profile.company.toLowerCase())} <span class="sep">/</span> <span class="eyebrow__coords">${esc(profile.coords)}</span></p>
       <h1 class="hero__title" data-reveal>
-        <pre class="banner" aria-hidden="true">${esc(HERO_BANNER)}</pre>
+        <pre class="banner" data-banner aria-hidden="true" style="--banner-cols:${bannerCols}">${esc(bannerText)}</pre>
         <span class="hero__name">${esc(profile.name)}</span>
       </h1>
       <p class="hero__typed" data-reveal>

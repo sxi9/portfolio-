@@ -629,9 +629,15 @@ main,
   font-size: inherit;
   font-weight: inherit;
 }
+.hero__title {
+  container-type: inline-size;
+}
 .banner {
   font-family: var(--font);
-  font-size: clamp(0.525rem, 3.5vw, 1.1875rem);
+  /* JetBrains Mono advances 0.6em per character: size the font so the
+     widest row exactly fills the column */
+  font-size: clamp(0.375rem, 1.9vw, 0.8125rem);
+  font-size: min(1.1875rem, calc(100cqi / (var(--banner-cols, 74) * 0.6)));
   font-weight: 700;
   line-height: 1.16;
   color: var(--ink);
@@ -2293,6 +2299,27 @@ kbd {
   height: auto;
   border: 1px solid var(--line);
 }
+.prose__fig {
+  margin: 1.8em 0;
+}
+.prose__fig a {
+  display: block;
+  line-height: 0;
+}
+.prose__fig img {
+  display: block;
+  width: 100%;
+}
+.prose__fig a:hover img,
+.prose__fig a:focus-visible img {
+  border-color: var(--line-strong);
+}
+.prose__fig figcaption {
+  margin-top: 9px;
+  color: var(--dim);
+  font-size: 0.75rem;
+  line-height: 1.55;
+}
 .prose hr {
   margin: 2em 0;
   border: 0;
@@ -2354,7 +2381,7 @@ kbd {
 .post__nav a:hover {
   border-color: var(--line-strong);
 }
-.post__nav a span {
+.post__nav a > span {
   color: var(--dim);
   font-size: 0.68rem;
   letter-spacing: 0.1em;

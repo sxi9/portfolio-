@@ -11,6 +11,7 @@ import { initTagSphere } from './ui/tagsphere.js';
 import { initTerminal } from './ui/terminal.js';
 import { initShots } from './ui/shots.js';
 import { initPulse } from './ui/pulse.js';
+import { initBanner } from './ui/banner.js';
 
 window.__sxi9 = true; // tells the inline script in index.html that we made it
 
@@ -71,6 +72,7 @@ const scene = import('./gl/start.js')
 runBoot().then((played) => {
   initReveal({ reduced });
   initTyped(profile.typed, { reduced });
+  initBanner({ reduced });
   scene.then((e) => {
     if (!e) return;
     if (!document.hidden) e.start();

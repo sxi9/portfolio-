@@ -44,7 +44,7 @@ terminal and the prerendered HTML all follow.
 | Add a featured project | `featured`: give it a `figure` from the list below |
 | Add a smaller project | `archive` |
 | Add or recolour a theme | `themes`: four colours each (`ink`, `hot`, `cool`, `bg`) |
-| Replace the big name banner | `HERO_BANNER` (any figlet output works) |
+| Replace the big name banner | `HERO_BANNER` (any figlet output works; it is sized to fit its column) |
 | Show a screenshot on a featured project | add `shot: { src, w, h, alt }` and put the image in `public/shots/` |
 
 Four slots are wired up and stay hidden until they have something in them:
@@ -88,7 +88,9 @@ The post itself, in Markdown. Headings start at `##`.
 - `figure` is optional: any model from the table below turns up next to the title.
 - `project: <id>` links a post to a featured project, which then gets a button to it.
 - `draft: true` keeps a post out of the build but visible in `npm run dev`.
-- Images go in `public/blog/` and are referenced as `![alt](./picture.png)`.
+- Images go in `public/blog/` and are referenced as `![alt](./picture.png "Caption")`. An image on
+  its own line becomes a captioned figure that links to the full-size file.
+- `date` can carry a time (`2026-11-15T18:00`) to order two posts from the same day.
 
 With no files in `posts/`, the section and the nav link disappear on their own.
 
@@ -109,6 +111,7 @@ A featured project shows one of these models next to its card (`figure: 'onion'`
 | `rack` | a server rack with a unit sliding out for service | WHM |
 | `dish` | an uplink dish sending rings | contact |
 | `chip` | a BIOS flash chip on its board, with a read head and a coin cell | the firmware write-up |
+| `gpu` | an H200-style module: the die between six HBM stacks, tokens rising off it | the uncensored-LLM post |
 
 To add one, write `src/gl/figures/<name>.js` (copy a short one such as `dish.js`), register it in
 `src/gl/figures/index.js`, and reference it from `content.js`. A figure is a three.js scene built
@@ -131,6 +134,17 @@ Press `` ` `` (or the `>_` button). `help` lists everything; a few highlights:
 | `fetch` | a system summary, including the live character grid size |
 
 ## Things that move
+
+**The banner.** SAMURAI, in figlet letters, scrambles into a samurai who runs across the banner,
+and the name re-forms behind him. Timings live at the top of `src/ui/banner.js`. The run cycle is
+generated: `scripts/build-samurai.mjs` poses a skeleton (hakama, trailing katana, headband) for each
+frame and draws it with direction glyphs, then writes `src/ui/samurai-frames.js`.
+
+```bash
+node scripts/build-samurai.mjs --print
+```
+
+With reduced motion, or without JavaScript, the banner just shows the name.
 
 **Screenshots that decode.** A featured project with a `shot` shows the real screenshot, drawn as
 characters. Pointing at it (or tapping it) erases the characters cell by cell and leaves the image.
@@ -204,7 +218,7 @@ src/gl/atlas.js         glyph atlas and character ramps
 src/gl/shaft.js         the ambient world
 src/gl/figures/         one file per 3D model
 public/shots/           project screenshots
-scripts/                regenerates the globe's land mask
+scripts/                regenerates the globe's land mask and the samurai run cycle
 ```
 
 ## Credits
