@@ -108,6 +108,7 @@ A featured project shows one of these models next to its card (`figure: 'onion'`
 | `fleet` | endpoints sending heartbeats to a server | MSP |
 | `rack` | a server rack with a unit sliding out for service | WHM |
 | `dish` | an uplink dish sending rings | contact |
+| `chip` | a BIOS flash chip on its board, with a read head and a coin cell | the firmware write-up |
 
 To add one, write `src/gl/figures/<name>.js` (copy a short one such as `dish.js`), register it in
 `src/gl/figures/index.js`, and reference it from `content.js`. A figure is a three.js scene built

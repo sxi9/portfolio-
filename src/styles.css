@@ -2157,7 +2157,7 @@ kbd {
     0 0 14px var(--bg);
 }
 .post__head--fig {
-  grid-template-columns: minmax(0, 1fr) 15rem;
+  grid-template-columns: minmax(0, 1fr) 17.5rem;
   align-items: center;
 }
 .post__stage .stage {

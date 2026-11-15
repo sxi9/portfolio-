@@ -8,6 +8,7 @@ import { createCluster } from './cluster.js';
 import { createFleet } from './fleet.js';
 import { createRack } from './rack.js';
 import { createDish } from './dish.js';
+import { createChip } from './chip.js';
 
 // data-figure="<name>" in the markup picks one of these. A figure is only
 // built the first time its stage comes near the viewport.
@@ -22,4 +23,5 @@ export const FIGURES = {
   fleet: createFleet,
   rack: createRack,
   dish: createDish,
+  chip: createChip,
 };
