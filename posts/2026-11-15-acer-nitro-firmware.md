@@ -1,5 +1,5 @@
 ---
-title: Sixteen gigabytes installed, six usable: asking the firmware why
+title: "Usable-RAM cap on the Acer Nitro 5 AN515-43: AGESA memory init with mismatched DDR4"
 date: 2026-11-15
 kind: write-up
 summary: An Acer Nitro 5 that reported 6 GB of its 16. Proving the cap was the firmware's decision, getting 2 GB back, and the three other things that broke on the way.
